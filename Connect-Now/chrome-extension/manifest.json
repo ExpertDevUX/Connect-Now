@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "StreamSync Helper",
+  "version": "1.0",
+  "description": "Enhances StreamSync video meetings",
+  "permissions": ["activeTab", "storage"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.replit.dev/*", "*://*.replit.app/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "icons": {
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

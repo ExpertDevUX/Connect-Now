@@ -1,0 +1,1 @@
+console.log("StreamSync Extension Active");

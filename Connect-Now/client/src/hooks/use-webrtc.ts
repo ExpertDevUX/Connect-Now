@@ -64,10 +64,11 @@ export function useWebRTC(roomId: string) {
     };
 
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'closed') {
+      const state = pc.connectionState;
+      if (state === 'closed') {
         setConnectionStatus('disconnected');
-      } else if (pc.connectionState === 'connected' || pc.connectionState === 'connecting' || pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-        setConnectionStatus(pc.connectionState);
+      } else if (state === 'connected' || state === 'connecting' || state === 'failed' || state === 'disconnected') {
+        setConnectionStatus(state);
       }
     };
 
