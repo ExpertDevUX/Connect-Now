@@ -90,6 +90,10 @@ export function useWebRTC(roomId: string) {
         const stream = await navigator.mediaDevices.getUserMedia(MEDIA_CONSTRAINTS);
         setLocalStream(stream);
         localStreamRef.current = stream;
+        
+        // Ensure tracks are enabled based on initial state
+        stream.getAudioTracks().forEach(track => track.enabled = true);
+        stream.getVideoTracks().forEach(track => track.enabled = true);
       } catch (err) {
         console.error("Error accessing media devices:", err);
         toast({

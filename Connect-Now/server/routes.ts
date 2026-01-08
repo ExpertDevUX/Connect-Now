@@ -100,10 +100,12 @@ export async function registerRoutes(
           (ws as any).nickname = message.payload;
           const room = rooms.get(currentRoomId);
           if (room) {
-            const participants = Array.from(room).map(p => ({
-              id: (p as any).peerId,
-              name: (p as any).nickname || 'Guest'
-            }));
+            const participants = Array.from(room)
+              .filter(p => (p as any).nickname) // Only count participants who have set a nickname/joined
+              .map(p => ({
+                id: (p as any).peerId,
+                name: (p as any).nickname
+              }));
             room.forEach(client => {
               if (client.readyState === WebSocket.OPEN) {
                 client.send(JSON.stringify({
