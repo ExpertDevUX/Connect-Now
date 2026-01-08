@@ -99,8 +99,13 @@ export default function Home() {
             </form>
           </div>
           
-          <div className="pt-8 border-t border-white/5">
+          <div className="pt-8 border-t border-white/5 flex flex-col gap-4">
             <p className="text-sm text-muted-foreground">Trusted by developers worldwide</p>
+            <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+              <a href="#" className="hover:text-primary transition-colors">Privacy Protect</a>
+              <a href="#" className="hover:text-primary transition-colors">DMCA</a>
+              <span>Copyright by <a href="https://thongphamit.site" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Hoang Thong Pham</a></span>
+            </div>
           </div>
         </motion.div>
 
