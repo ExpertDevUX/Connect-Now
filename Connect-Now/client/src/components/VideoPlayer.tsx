@@ -15,6 +15,18 @@ export function VideoPlayer({ stream, muted = false, isLocal = false, className,
   useEffect(() => {
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream;
+      
+      // Force play if it doesn't start automatically
+      const playVideo = async () => {
+        try {
+          if (videoRef.current) {
+            await videoRef.current.play();
+          }
+        } catch (err) {
+          console.error("Video play failed:", err);
+        }
+      };
+      playVideo();
     }
   }, [stream]);
 

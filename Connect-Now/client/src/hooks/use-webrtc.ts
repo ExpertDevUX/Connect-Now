@@ -67,7 +67,16 @@ export function useWebRTC(roomId: string) {
 
     pc.ontrack = (event) => {
       console.log('Remote track received:', event.track.kind);
-      setRemoteStream(event.streams[0]);
+      // Create a new MediaStream if it doesn't exist or doesn't have the track
+      setRemoteStream(prev => {
+        if (prev) {
+          if (!prev.getTracks().includes(event.track)) {
+            prev.addTrack(event.track);
+          }
+          return new MediaStream(prev.getTracks());
+        }
+        return new MediaStream([event.track]);
+      });
     };
 
     pc.oniceconnectionstatechange = () => {
