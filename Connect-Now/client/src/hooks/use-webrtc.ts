@@ -12,14 +12,18 @@ const STUN_CONFIG: RTCConfiguration = {
 
 const MEDIA_CONSTRAINTS = {
   video: {
-    width: { ideal: 1280 },
-    height: { ideal: 720 },
+    width: { min: 1280, ideal: 1920, max: 3840 },
+    height: { min: 720, ideal: 1080, max: 2160 },
     frameRate: { ideal: 30, max: 60 },
+    facingMode: "user",
   },
   audio: {
     echoCancellation: true,
     noiseSuppression: true,
     autoGainControl: true,
+    channelCount: 2,
+    sampleRate: 48000,
+    sampleSize: 16,
   },
 };
 
@@ -44,7 +48,9 @@ export function useWebRTC(roomId: string) {
       if (transceiver && transceiver.sender.track) {
         const parameters = transceiver.sender.getParameters();
         if (!parameters.encodings) parameters.encodings = [{}];
-        parameters.encodings[0].maxBitrate = 2500000; // 2.5 Mbps for 720p
+        // Set higher bitrate for 1080p/4K support
+        parameters.encodings[0].maxBitrate = 8000000; // 8 Mbps for high quality
+        parameters.encodings[0].networkPriority = 'high';
         transceiver.sender.setParameters(parameters);
       }
     });
