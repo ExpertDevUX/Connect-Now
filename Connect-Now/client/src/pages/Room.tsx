@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useRoom } from "@/hooks/use-rooms";
 import { useWebRTC } from "@/hooks/use-webrtc";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Copy, Check, Users, Signal } from "lucide-react";
+import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Copy, Check, Users, Signal, Loader2, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -15,7 +16,7 @@ export default function Room() {
   const roomId = params?.id || "";
   
   const { data: room, isLoading } = useRoom(roomId);
-  const { localStream, remoteStream, connectionStatus, toggleAudio, toggleVideo } = useWebRTC(roomId);
+  const { localStream, remoteStream, connectionStatus, toggleAudio, toggleVideo, updateNickname } = useWebRTC(roomId);
   
   const [password, setPassword] = useState("");
   const [isVerified, setIsVerified] = useState(false);
@@ -23,6 +24,23 @@ export default function Room() {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [nickname, setNickname] = useState("");
+  const [joined, setJoined] = useState(false);
+  const [participants, setParticipants] = useState<any[]>([]);
+
+  useEffect(() => {
+    const handleParticipantsUpdate = (e: any) => {
+      setParticipants(e.detail);
+    };
+    window.addEventListener('participants-updated', handleParticipantsUpdate);
+    return () => window.removeEventListener('participants-updated', handleParticipantsUpdate);
+  }, []);
+
+  useEffect(() => {
+    if (joined && nickname) {
+      updateNickname(nickname);
+    }
+  }, [joined, nickname, updateNickname]);
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +55,13 @@ export default function Room() {
       else alert("Invalid password");
     } finally {
       setVerifying(false);
+    }
+  };
+
+  const handleJoinMeeting = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (nickname.trim()) {
+      setJoined(true);
     }
   };
 
@@ -59,15 +84,6 @@ export default function Room() {
   const leaveRoom = () => {
     setLocation("/");
   };
-
-  // Connection status indicator color
-  const statusColor = {
-    new: "bg-gray-500",
-    connecting: "bg-yellow-500",
-    connected: "bg-green-500",
-    disconnected: "bg-red-500",
-    failed: "bg-red-500",
-  }[connectionStatus] || "bg-gray-500";
 
   if (isLoading) {
     return (
@@ -120,6 +136,50 @@ export default function Room() {
     );
   }
 
+  if (!joined) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-background">
+        <div className="w-full max-w-md p-8 bg-card rounded-2xl border border-white/10 shadow-2xl space-y-6">
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-bold font-display tracking-tight">Ready to join?</h2>
+            <p className="text-muted-foreground">Enter your nickname to enter the room.</p>
+          </div>
+          <form onSubmit={handleJoinMeeting} className="space-y-4">
+            <Input
+              placeholder="Your Nickname"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              className="h-12 bg-secondary/50 border-transparent focus:border-primary/50"
+              autoFocus
+              required
+            />
+            <div className="flex gap-4">
+              <Button
+                type="button"
+                variant={audioEnabled ? "outline" : "destructive"}
+                className="flex-1 h-12"
+                onClick={handleToggleAudio}
+              >
+                {audioEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+              </Button>
+              <Button
+                type="button"
+                variant={videoEnabled ? "outline" : "destructive"}
+                className="flex-1 h-12"
+                onClick={handleToggleVideo}
+              >
+                {videoEnabled ? <VideoIcon className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+              </Button>
+            </div>
+            <Button type="submit" className="w-full h-12 bg-primary font-semibold">
+              Join Meeting
+            </Button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen w-full bg-black/95 text-white flex flex-col overflow-hidden">
       {/* Top Bar */}
@@ -139,87 +199,102 @@ export default function Room() {
         </div>
 
         <div className="flex items-center gap-3">
-           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5 text-xs font-medium">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5 text-xs font-medium">
             <Signal className={cn("w-3.5 h-3.5", connectionStatus === 'connected' ? "text-green-500" : "text-yellow-500")} />
             <span className="capitalize">{connectionStatus}</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5 text-xs font-medium">
             <Users className="w-3.5 h-3.5 text-muted-foreground" />
-            <span>{remoteStream ? 2 : 1}</span>
+            <span>{remoteStream ? participants.length + 1 : 1}</span>
           </div>
         </div>
       </header>
-      {/* ... rest of existing Room UI ... */}
 
-      {/* Main Video Area */}
-      <main className="flex-1 p-4 md:p-6 relative flex items-center justify-center gap-4 md:gap-6">
-        <AnimatePresence mode="popLayout">
-          {/* Remote Video (Main Stage) */}
-          {remoteStream ? (
+      <div className="flex-1 flex overflow-hidden">
+        {/* Main Video Area */}
+        <main className="flex-1 p-4 md:p-6 relative flex items-center justify-center gap-4 md:gap-6">
+          <AnimatePresence mode="popLayout">
+            {remoteStream ? (
+              <motion.div 
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="flex-1 h-full max-h-[calc(100vh-160px)] w-full max-w-5xl relative"
+              >
+                <VideoPlayer 
+                  stream={remoteStream} 
+                  isLocal={false} 
+                  className="w-full h-full bg-zinc-900 border-zinc-800"
+                  label="Remote Peer"
+                />
+              </motion.div>
+            ) : (
+               <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex-1 flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-white/10 rounded-3xl h-full max-h-[600px] w-full max-w-4xl bg-white/5"
+              >
+                <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6 animate-pulse">
+                  <Users className="w-10 h-10 text-white/20" />
+                </div>
+                <h3 className="text-xl font-medium mb-2">Waiting for others to join...</h3>
+                <p className="text-muted-foreground max-w-sm mb-6">
+                  Share the room ID with someone to start the video call.
+                </p>
+                <Button onClick={copyRoomId} variant="outline" className="gap-2 border-white/10 hover:bg-white/5">
+                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  Copy Room ID
+                </Button>
+              </motion.div>
+            )}
+
             <motion.div 
               layout
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="flex-1 h-full max-h-[calc(100vh-160px)] w-full max-w-5xl relative"
+              className={cn(
+                "overflow-hidden shadow-2xl transition-all duration-500 ease-spring",
+                remoteStream 
+                  ? "absolute bottom-6 right-6 w-48 md:w-64 aspect-video rounded-xl border-2 border-white/10 z-20" 
+                  : "w-full max-w-2xl aspect-video rounded-3xl border-2 border-white/10"
+              )}
             >
-              <VideoPlayer 
-                stream={remoteStream} 
-                isLocal={false} 
-                className="w-full h-full bg-zinc-900 border-zinc-800"
-                label="Remote Peer"
-              />
+               <VideoPlayer 
+                  stream={localStream} 
+                  isLocal={true} 
+                  muted={true}
+                  className="w-full h-full bg-zinc-800"
+                  label={nickname || "You"}
+                />
             </motion.div>
-          ) : (
-             <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex-1 flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-white/10 rounded-3xl h-full max-h-[600px] w-full max-w-4xl bg-white/5"
-            >
-              <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6 animate-pulse">
-                <Users className="w-10 h-10 text-white/20" />
+          </AnimatePresence>
+        </main>
+
+        {/* Participants Sidebar */}
+        <aside className="w-64 border-l border-white/5 bg-black/20 backdrop-blur-lg hidden lg:flex flex-col p-4">
+          <div className="flex items-center gap-2 mb-6">
+            <Users className="w-5 h-5 text-primary" />
+            <h2 className="font-semibold">Participants</h2>
+          </div>
+          <div className="space-y-4 overflow-y-auto">
+            <div className="flex items-center gap-3">
+              <UserCircle className="w-8 h-8 text-primary/50" />
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">{nickname} (You)</span>
+                <span className="text-[10px] text-green-500">Active</span>
               </div>
-              <h3 className="text-xl font-medium mb-2">Waiting for others to join...</h3>
-              <p className="text-muted-foreground max-w-sm mb-6">
-                Share the room ID with someone to start the video call.
-              </p>
-              <Button onClick={copyRoomId} variant="outline" className="gap-2 border-white/10 hover:bg-white/5">
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                Copy Room ID
-              </Button>
-            </motion.div>
-          )}
-
-          {/* Local Video (PIP or Grid) */}
-          <motion.div 
-            layout
-            className={cn(
-              "overflow-hidden shadow-2xl transition-all duration-500 ease-spring",
-              remoteStream 
-                ? "absolute bottom-6 right-6 w-48 md:w-64 aspect-video rounded-xl border-2 border-white/10 z-20" 
-                : "hidden" // Or display differently if no remote stream, but handled by main view usually
-            )}
-          >
-             <VideoPlayer 
-                stream={localStream} 
-                isLocal={true} 
-                muted={true}
-                className="w-full h-full bg-zinc-800"
-                label="You"
-              />
-          </motion.div>
-
-          {/* If no remote stream, show local stream as main specific view or just hidden? 
-              Actually, usually you see yourself big until someone joins.
-          */}
-          {!remoteStream && (
-             <div className="absolute inset-0 -z-10 opacity-20 blur-3xl scale-110">
-               {/* Background ambience using local video */}
-               <video ref={(ref) => ref && localStream && (ref.srcObject = localStream)} autoPlay muted className="w-full h-full object-cover" />
-             </div>
-          )}
-        </AnimatePresence>
-      </main>
+            </div>
+            {participants.map((p, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <UserCircle className="w-8 h-8 text-muted-foreground" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">{p.name || "Guest"}</span>
+                  <span className="text-[10px] text-muted-foreground">Participant</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </aside>
+      </div>
 
       {/* Control Bar */}
       <footer className="h-24 flex items-center justify-center gap-4 relative z-20">

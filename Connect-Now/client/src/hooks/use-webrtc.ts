@@ -131,9 +131,17 @@ export function useWebRTC(roomId: string) {
 
       try {
         switch (msg.type) {
-          case 'init':
-            setIsBoss(msg.isBoss);
-            break;
+            case 'participants-list':
+              if (msg.payload && Array.isArray(msg.payload)) {
+                // We'll handle this in the component via a callback or state if passed down
+                // For now, let's just make sure it doesn't crash and we can emit it
+                (window as any).dispatchEvent(new CustomEvent('participants-updated', { detail: msg.payload }));
+              }
+              break;
+
+            case 'init':
+              setIsBoss(msg.isBoss);
+              break;
 
           case 'meeting-finished':
             setMeetingFinished(true);
@@ -218,13 +226,31 @@ export function useWebRTC(roomId: string) {
 
   const toggleAudio = (enabled: boolean) => {
     if (localStream) {
-      localStream.getAudioTracks().forEach(track => track.enabled = enabled);
+      localStream.getAudioTracks().forEach(track => {
+        track.enabled = enabled;
+        // Some browsers need explicit mute/unmute of the track
+        if (enabled) {
+          track.applyConstraints({ echoCancellation: true, noiseSuppression: true });
+        }
+      });
     }
   };
 
   const toggleVideo = (enabled: boolean) => {
     if (localStream) {
-      localStream.getVideoTracks().forEach(track => track.enabled = enabled);
+      localStream.getVideoTracks().forEach(track => {
+        track.enabled = enabled;
+      });
+    }
+  };
+
+  const updateNickname = (name: string) => {
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify({
+        type: 'update-name',
+        payload: name,
+        roomId
+      } as any));
     }
   };
 
@@ -233,6 +259,8 @@ export function useWebRTC(roomId: string) {
     remoteStream,
     connectionStatus,
     toggleAudio,
-    toggleVideo
+    toggleVideo,
+    updateNickname,
+    isBoss
   };
 }

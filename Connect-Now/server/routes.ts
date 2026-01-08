@@ -72,29 +72,47 @@ export async function registerRoutes(
           }
           const room = rooms.get(roomId)!;
           
+          // Limit to 10 peers for a meeting
+          if (room.size >= 10) {
+             ws.send(JSON.stringify({ type: 'error', message: 'Room full' }));
+             return;
+          }
+
           // The first user to join is the "boss"
           const isBoss = room.size === 0;
           if (isBoss) {
             (ws as any).isBoss = true;
           }
 
-          // Limit to 2 peers for simple p2p video
-          if (room.size >= 2) {
-             ws.send(JSON.stringify({ type: 'full' }));
-             return;
-          }
-
+          (ws as any).peerId = Math.random().toString(36).substring(7);
           room.add(ws);
           
-          // Send back if they are the boss
-          ws.send(JSON.stringify({ type: 'init', isBoss }));
+          // Send back initial state
+          ws.send(JSON.stringify({ type: 'init', isBoss, peerId: (ws as any).peerId }));
 
           // Notify others in room that a user joined
           room.forEach(client => {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
-              client.send(JSON.stringify({ type: 'join', roomId }));
+              client.send(JSON.stringify({ type: 'join', roomId, peerId: (ws as any).peerId }));
             }
           });
+        } else if (message.type === 'update-name' && currentRoomId) {
+          (ws as any).nickname = message.payload;
+          const room = rooms.get(currentRoomId);
+          if (room) {
+            const participants = Array.from(room).map(p => ({
+              id: (p as any).peerId,
+              name: (p as any).nickname || 'Guest'
+            }));
+            room.forEach(client => {
+              if (client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                  type: 'participants-list',
+                  payload: participants
+                }));
+              }
+            });
+          }
         } else if (currentRoomId) {
           // Relay signaling messages (offer, answer, candidate) to other peers in the room
           const room = rooms.get(currentRoomId);

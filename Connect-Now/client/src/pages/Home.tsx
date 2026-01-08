@@ -3,12 +3,14 @@ import { useLocation } from "wouter";
 import { CreateRoomModal } from "@/components/CreateRoomModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Video, Keyboard, ArrowRight } from "lucide-react";
+import { Video, Keyboard, ArrowRight, Sun, Moon } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTheme } from "next-themes";
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const [joinId, setJoinId] = useState("");
+  const { theme, setTheme } = useTheme();
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,7 +20,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden">
       {/* Decorative gradients */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-primary/20 blur-[120px] rounded-full pointer-events-none opacity-50" />
       <div className="absolute bottom-0 right-0 w-[800px] h-[600px] bg-indigo-500/10 blur-[100px] rounded-full pointer-events-none" />
@@ -31,6 +33,14 @@ export default function Home() {
           </div>
           <span className="text-xl font-display font-bold">StreamSync</span>
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="rounded-full"
+        >
+          {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </Button>
       </header>
 
       {/* Main Content */}
