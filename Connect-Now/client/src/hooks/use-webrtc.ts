@@ -70,27 +70,52 @@ export function useWebRTC(roomId: string) {
 
     pc.ontrack = (event) => {
       console.log('Remote track received:', event.track.kind);
-      const stream = event.streams[0] || new MediaStream();
-      if (!stream.getTracks().includes(event.track)) {
-        stream.addTrack(event.track);
+      // Ensure the remote audio track is enabled
+      if (event.track.kind === 'audio') {
+        event.track.enabled = true;
       }
-      setRemoteStream(new MediaStream(stream.getTracks()));
+      
+      const stream = (event.streams && event.streams[0]) ? event.streams[0] : new MediaStream([event.track]);
+      
+      // Crucial: Play the audio track directly via a hidden audio element if it's an audio track
+      if (event.track.kind === 'audio') {
+        const remoteAudio = new Audio();
+        remoteAudio.srcObject = new MediaStream([event.track]);
+        remoteAudio.autoplay = true;
+        remoteAudio.play().catch(e => console.error("Remote audio play failed:", e));
+        // Keep a reference to prevent garbage collection
+        (window as any)._remoteAudio = remoteAudio;
+      }
+      
+      setRemoteStream(stream);
     };
 
     pc.oniceconnectionstatechange = () => {
       const state = pc.iceConnectionState;
       console.log('ICE Connection State:', state);
       if (state === 'failed') {
+        console.log('ICE failed, attempting restart...');
         pc.restartIce();
       }
     };
 
     pc.onconnectionstatechange = () => {
       const state = pc.connectionState;
+      console.log('Connection State:', state);
       if (state === 'closed') {
         setConnectionStatus('disconnected');
       } else if (state === 'connected' || state === 'connecting' || state === 'failed' || state === 'disconnected') {
         setConnectionStatus(state);
+      }
+      
+      // Attempt recovery on failure
+      if (state === 'failed') {
+        console.log('Connection failed, attempting ICE restart');
+        try {
+          pc.restartIce();
+        } catch (e) {
+          console.error("ICE restart failed:", e);
+        }
       }
     };
 

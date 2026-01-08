@@ -44,7 +44,7 @@ export function VideoPlayer({ stream, muted = false, isLocal = false, className,
         ref={videoRef}
         autoPlay
         playsInline
-        muted={isLocal || muted} // Always mute local video element to prevent feedback
+        muted={isLocal} // ONLY mute local video to prevent feedback. Remote must NOT be muted.
         className={cn(
           "w-full h-full object-cover transition-transform duration-500", 
           isLocal && "scale-x-[-1]" // Mirror local video
