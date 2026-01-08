@@ -6,6 +6,9 @@ const STUN_CONFIG: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
   ],
   iceCandidatePoolSize: 10,
 };
@@ -67,13 +70,11 @@ export function useWebRTC(roomId: string) {
 
     pc.ontrack = (event) => {
       console.log('Remote track received:', event.track.kind);
-      setRemoteStream(prev => {
-        const stream = prev || new MediaStream();
-        if (!stream.getTracks().find(t => t.id === event.track.id)) {
-          stream.addTrack(event.track);
-        }
-        return new MediaStream(stream.getTracks());
-      });
+      const stream = event.streams[0] || new MediaStream();
+      if (!stream.getTracks().includes(event.track)) {
+        stream.addTrack(event.track);
+      }
+      setRemoteStream(new MediaStream(stream.getTracks()));
     };
 
     pc.oniceconnectionstatechange = () => {
