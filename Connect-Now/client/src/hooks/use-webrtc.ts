@@ -64,7 +64,11 @@ export function useWebRTC(roomId: string) {
     };
 
     pc.onconnectionstatechange = () => {
-      setConnectionStatus(pc.connectionState);
+      if (pc.connectionState === 'closed') {
+        setConnectionStatus('disconnected');
+      } else if (pc.connectionState === 'connected' || pc.connectionState === 'connecting' || pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+        setConnectionStatus(pc.connectionState);
+      }
     };
 
     // Add local tracks if stream exists
@@ -131,17 +135,15 @@ export function useWebRTC(roomId: string) {
 
       try {
         switch (msg.type) {
-            case 'participants-list':
-              if (msg.payload && Array.isArray(msg.payload)) {
-                // We'll handle this in the component via a callback or state if passed down
-                // For now, let's just make sure it doesn't crash and we can emit it
-                (window as any).dispatchEvent(new CustomEvent('participants-updated', { detail: msg.payload }));
-              }
-              break;
+          case 'participants-list':
+            if (msg.payload && Array.isArray(msg.payload)) {
+              (window as any).dispatchEvent(new CustomEvent('participants-updated', { detail: msg.payload }));
+            }
+            break;
 
-            case 'init':
-              setIsBoss(msg.isBoss);
-              break;
+          case 'init':
+            setIsBoss(msg.isBoss);
+            break;
 
           case 'meeting-finished':
             setMeetingFinished(true);

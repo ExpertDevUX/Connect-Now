@@ -3,9 +3,10 @@ import { useLocation } from "wouter";
 import { CreateRoomModal } from "@/components/CreateRoomModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Video, Keyboard, ArrowRight, Sun, Moon } from "lucide-react";
+import { Video, Keyboard, ArrowRight, Sun, Moon, Monitor } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -33,14 +34,25 @@ export default function Home() {
           </div>
           <span className="text-xl font-display font-bold">StreamSync</span>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="rounded-full"
-        >
-          {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme("system")}
+            className={cn("rounded-full h-8 w-8", theme === "system" && "bg-primary/10 text-primary")}
+            title="System Theme"
+          >
+            <Monitor className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="rounded-full"
+          >
+            {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </Button>
+        </div>
       </header>
 
       {/* Main Content */}
