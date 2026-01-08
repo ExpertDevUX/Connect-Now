@@ -261,7 +261,7 @@ export default function Room() {
                <VideoPlayer 
                   stream={localStream} 
                   isLocal={true} 
-                  muted={true}
+                  muted={!audioEnabled}
                   className="w-full h-full bg-zinc-800"
                   label={nickname || "You"}
                 />
