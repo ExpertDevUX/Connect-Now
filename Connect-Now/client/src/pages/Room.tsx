@@ -284,7 +284,7 @@ export default function Room() {
               </div>
             </div>
             {participants.map((p, i) => (
-              <div key={i} className="flex items-center gap-3">
+              <div key={`${p.id}-${i}`} className="flex items-center gap-3">
                 <UserCircle className="w-8 h-8 text-muted-foreground" />
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">{p.name || "Guest"}</span>

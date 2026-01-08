@@ -66,7 +66,16 @@ export function useWebRTC(roomId: string) {
     };
 
     pc.ontrack = (event) => {
+      console.log('Remote track received:', event.track.kind);
       setRemoteStream(event.streams[0]);
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      const state = pc.iceConnectionState;
+      console.log('ICE Connection State:', state);
+      if (state === 'failed') {
+        pc.restartIce();
+      }
     };
 
     pc.onconnectionstatechange = () => {
