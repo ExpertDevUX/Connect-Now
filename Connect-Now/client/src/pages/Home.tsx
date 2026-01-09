@@ -50,7 +50,7 @@ export default function Home() {
             <DropdownMenuContent align="end" className="w-48 bg-background/80 backdrop-blur-lg border-white/10 rounded-xl">
               <DropdownMenuItem className="cursor-pointer gap-2 py-2.5">
                 <div className="w-2 h-2 rounded-full bg-primary" />
-                <span>Menu V2</span>
+                <span>V2</span>
               </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer gap-2 py-2.5 opacity-50">
                 <span>More Features</span>
