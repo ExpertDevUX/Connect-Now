@@ -340,12 +340,56 @@ export function useWebRTC(roomId: string) {
     }
   };
 
+  const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
+
+  const startScreenShare = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      setScreenStream(stream);
+      screenStreamRef.current = stream;
+
+      const videoTrack = stream.getVideoTracks()[0];
+      if (peerConnectionRef.current) {
+        const sender = peerConnectionRef.current.getSenders().find(s => s.track?.kind === 'video');
+        if (sender) {
+          sender.replaceTrack(videoTrack);
+        }
+      }
+
+      videoTrack.onended = () => stopScreenShare();
+      return stream;
+    } catch (err) {
+      console.error("Error starting screen share:", err);
+      return null;
+    }
+  };
+
+  const stopScreenShare = () => {
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach(track => track.stop());
+      setScreenStream(null);
+      screenStreamRef.current = null;
+
+      if (localStreamRef.current && peerConnectionRef.current) {
+        const videoTrack = localStreamRef.current.getVideoTracks()[0];
+        const sender = peerConnectionRef.current.getSenders().find(s => s.track?.kind === 'video');
+        if (sender) {
+          sender.replaceTrack(videoTrack);
+        }
+      }
+    }
+  };
+
   return {
     localStream,
     remoteStream,
+    screenStream,
     connectionStatus,
     toggleAudio,
     toggleVideo,
+    startScreenShare,
+    stopScreenShare,
     updateNickname,
     isBoss
   };
