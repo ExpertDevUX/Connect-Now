@@ -32,8 +32,22 @@ export default function Room() {
     const handleParticipantsUpdate = (e: any) => {
       setParticipants(e.detail);
     };
+    const handlePeerMuteStatus = (e: any) => {
+      const { peerId, payload } = e.detail;
+      setParticipants(prev => {
+        const updated = prev.map(p => 
+          p.id === peerId ? { ...p, audioEnabled: payload.audio } : p
+        );
+        console.log("Updated participants mute status:", updated);
+        return updated;
+      });
+    };
     window.addEventListener('participants-updated', handleParticipantsUpdate);
-    return () => window.removeEventListener('participants-updated', handleParticipantsUpdate);
+    window.addEventListener('peer-mute-status', handlePeerMuteStatus);
+    return () => {
+      window.removeEventListener('participants-updated', handleParticipantsUpdate);
+      window.removeEventListener('peer-mute-status', handlePeerMuteStatus);
+    };
   }, []);
 
   useEffect(() => {
@@ -284,9 +298,18 @@ export default function Room() {
             </div>
             {participants.map((p, i) => (
               <div key={`${p.id}-${i}`} className="flex items-center gap-3">
-                <UserCircle className="w-8 h-8 text-muted-foreground" />
+                <div className="relative">
+                  <UserCircle className="w-8 h-8 text-muted-foreground" />
+                  {p.audioEnabled === false && (
+                    <div className="absolute -bottom-1 -right-1 bg-destructive rounded-full p-0.5 border border-black">
+                      <MicOff className="w-2.5 h-2.5 text-white" />
+                    </div>
+                  )}
+                </div>
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium">{p.name || "Guest"}</span>
+                  <span className="text-sm font-medium">
+                    {p.name || "Guest"} {p.audioEnabled === false && <span className="text-[10px] text-destructive ml-1">(Muted)</span>}
+                  </span>
                   <span className="text-[10px] text-muted-foreground">Participant</span>
                 </div>
               </div>

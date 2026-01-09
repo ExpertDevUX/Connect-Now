@@ -104,13 +104,28 @@ export async function registerRoutes(
               .filter(p => (p as any).nickname) // Only count participants who have set a nickname/joined
               .map(p => ({
                 id: (p as any).peerId,
-                name: (p as any).nickname
+                name: (p as any).nickname,
+                audioEnabled: (p as any).audioEnabled !== false
               }));
             room.forEach(client => {
               if (client.readyState === WebSocket.OPEN) {
                 client.send(JSON.stringify({
                   type: 'participants-list',
                   payload: participants
+                }));
+              }
+            });
+          }
+        } else if (message.type === 'mute-status' && currentRoomId) {
+          (ws as any).audioEnabled = message.payload.audio;
+          const room = rooms.get(currentRoomId);
+          if (room) {
+            room.forEach(client => {
+              if (client !== ws && client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                  type: 'mute-status',
+                  peerId: (ws as any).peerId,
+                  payload: message.payload
                 }));
               }
             });

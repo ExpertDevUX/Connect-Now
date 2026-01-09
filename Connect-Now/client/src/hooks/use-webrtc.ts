@@ -172,6 +172,12 @@ export function useWebRTC(roomId: string) {
     ws.onopen = () => {
       console.log('WS Connected');
       ws.send(JSON.stringify({ type: 'join', roomId } as SignalMessage));
+      // Send initial mute status
+      ws.send(JSON.stringify({
+        type: 'mute-status',
+        payload: { audio: localStream.getAudioTracks().every(t => t.enabled) },
+        roomId
+      }));
     };
 
     ws.onmessage = async (event) => {
@@ -187,14 +193,36 @@ export function useWebRTC(roomId: string) {
 
       try {
         switch (msg.type) {
+          case 'mute-status':
+            // Relay mute status locally
+            (window as any).dispatchEvent(new CustomEvent('peer-mute-status', { 
+              detail: { peerId: msg.peerId, payload: msg.payload } 
+            }));
+            break;
+
           case 'participants-list':
             if (msg.payload && Array.isArray(msg.payload)) {
               (window as any).dispatchEvent(new CustomEvent('participants-updated', { detail: msg.payload }));
+              
+              // Immediately sync mute status for all participants
+              msg.payload.forEach((p: any) => {
+                (window as any).dispatchEvent(new CustomEvent('peer-mute-status', { 
+                  detail: { peerId: p.id, payload: { audio: p.audioEnabled } } 
+                }));
+              });
             }
+            break;
+
+          case 'peer-mute-status':
+            // Handle signaling mute status
+            (window as any).dispatchEvent(new CustomEvent('peer-mute-status', { 
+              detail: { peerId: msg.peerId, payload: msg.payload } 
+            }));
             break;
 
           case 'init':
             setIsBoss(msg.isBoss);
+            (window as any)._peerId = msg.peerId;
             break;
 
           case 'meeting-finished':
@@ -282,11 +310,15 @@ export function useWebRTC(roomId: string) {
     if (localStream) {
       localStream.getAudioTracks().forEach(track => {
         track.enabled = enabled;
-        // Some browsers need explicit mute/unmute of the track
-        if (enabled) {
-          track.applyConstraints({ echoCancellation: true, noiseSuppression: true });
-        }
       });
+      // Broadcast mute status to others
+      if (socketRef.current?.readyState === WebSocket.OPEN) {
+        socketRef.current.send(JSON.stringify({
+          type: 'mute-status',
+          payload: { audio: enabled },
+          roomId
+        } as any));
+      }
     }
   };
 
