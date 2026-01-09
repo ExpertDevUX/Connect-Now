@@ -3,10 +3,16 @@ import { useLocation } from "wouter";
 import { CreateRoomModal } from "@/components/CreateRoomModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Video, Keyboard, ArrowRight, Sun, Moon, Monitor } from "lucide-react";
+import { Video, Keyboard, ArrowRight, Sun, Moon, Monitor, LayoutGrid } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -35,6 +41,23 @@ export default function Home() {
           <span className="text-xl font-display font-bold">StreamSync</span>
         </div>
         <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <LayoutGrid className="w-5 h-5 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-background/80 backdrop-blur-lg border-white/10 rounded-xl">
+              <DropdownMenuItem className="cursor-pointer gap-2 py-2.5">
+                <div className="w-2 h-2 rounded-full bg-primary" />
+                <span>Menu V2</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer gap-2 py-2.5 opacity-50">
+                <span>More Features</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button
             variant="ghost"
             size="icon"
