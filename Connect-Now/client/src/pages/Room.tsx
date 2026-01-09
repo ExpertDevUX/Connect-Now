@@ -24,6 +24,8 @@ export default function Room() {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [showCC, setShowCC] = useState(false);
+  const [captions, setCaptions] = useState("");
   const [copied, setCopied] = useState(false);
   const [nickname, setNickname] = useState("");
   const [joined, setJoined] = useState(false);
@@ -38,6 +40,44 @@ export default function Room() {
       if (stream) setIsScreenSharing(true);
     }
   };
+
+  const [targetLang, setTargetLang] = useState('en');
+
+  const translateText = async (text: string, lang: string) => {
+    if (!text || lang === 'en') return text;
+    try {
+      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t&q=${encodeURIComponent(text)}`);
+      const data = await res.json();
+      return data[0][0][0];
+    } catch (err) {
+      console.error("Translation error:", err);
+      return text;
+    }
+  };
+
+  useEffect(() => {
+    if (!showCC) return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = async (event: any) => {
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          const transcript = event.results[i][0].transcript;
+          const translated = await translateText(transcript, targetLang);
+          setCaptions(translated);
+        }
+      }
+    };
+
+    recognition.start();
+    return () => recognition.stop();
+  }, [showCC, targetLang]);
 
   useEffect(() => {
     const handleParticipantsUpdate = (e: any) => {
@@ -413,7 +453,123 @@ export default function Room() {
       </footer>
 
       {showCC && (
-        <div className="fixed bottom-32 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-50">
+        <div className="fixed bottom-32 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-50 flex flex-col gap-4">
+          <div className="flex justify-center">
+            <select 
+              value={targetLang} 
+              onChange={(e) => setTargetLang(e.target.value)}
+              className="bg-black/40 backdrop-blur-md border border-white/10 text-white text-xs rounded-lg px-2 py-1 outline-none"
+            >
+              <option value="en">English</option>
+              <option value="af">Afrikaans</option>
+              <option value="sq">Albanian</option>
+              <option value="am">Amharic</option>
+              <option value="ar">Arabic</option>
+              <option value="hy">Armenian</option>
+              <option value="az">Azerbaijani</option>
+              <option value="eu">Basque</option>
+              <option value="be">Belarusian</option>
+              <option value="bn">Bengali</option>
+              <option value="bs">Bosnian</option>
+              <option value="bg">Bulgarian</option>
+              <option value="ca">Catalan</option>
+              <option value="ceb">Cebuano</option>
+              <option value="zh">Chinese</option>
+              <option value="co">Corsican</option>
+              <option value="hr">Croatian</option>
+              <option value="cs">Czech</option>
+              <option value="da">Danish</option>
+              <option value="nl">Dutch</option>
+              <option value="eo">Esperanto</option>
+              <option value="et">Estonian</option>
+              <option value="fi">Finnish</option>
+              <option value="fr">French</option>
+              <option value="fy">Frisian</option>
+              <option value="gl">Galician</option>
+              <option value="ka">Georgian</option>
+              <option value="de">German</option>
+              <option value="el">Greek</option>
+              <option value="gu">Gujarati</option>
+              <option value="ht">Haitian Creole</option>
+              <option value="ha">Hausa</option>
+              <option value="haw">Hawaiian</option>
+              <option value="iw">Hebrew</option>
+              <option value="hi">Hindi</option>
+              <option value="hmn">Hmong</option>
+              <option value="hu">Hungarian</option>
+              <option value="is">Icelandic</option>
+              <option value="ig">Igbo</option>
+              <option value="id">Indonesian</option>
+              <option value="ga">Irish</option>
+              <option value="it">Italian</option>
+              <option value="ja">Japanese</option>
+              <option value="jw">Javanese</option>
+              <option value="kn">Kannada</option>
+              <option value="kk">Kazakh</option>
+              <option value="km">Khmer</option>
+              <option value="rw">Kinyarwanda</option>
+              <option value="ko">Korean</option>
+              <option value="ku">Kurdish</option>
+              <option value="ky">Kyrgyz</option>
+              <option value="lo">Lao</option>
+              <option value="la">Latin</option>
+              <option value="lv">Latvian</option>
+              <option value="lt">Lithuanian</option>
+              <option value="lb">Luxembourgish</option>
+              <option value="mk">Macedonian</option>
+              <option value="mg">Malagasy</option>
+              <option value="ms">Malay</option>
+              <option value="ml">Malayalam</option>
+              <option value="mt">Maltese</option>
+              <option value="mi">Maori</option>
+              <option value="mr">Marathi</option>
+              <option value="mn">Mongolian</option>
+              <option value="my">Myanmar (Burmese)</option>
+              <option value="ne">Nepali</option>
+              <option value="no">Norwegian</option>
+              <option value="ny">Nyanja (Chichewa)</option>
+              <option value="or">Odisha (Oriya)</option>
+              <option value="ps">Pashto</option>
+              <option value="fa">Persian</option>
+              <option value="pl">Polish</option>
+              <option value="pt">Portuguese</option>
+              <option value="pa">Punjabi</option>
+              <option value="ro">Romanian</option>
+              <option value="ru">Russian</option>
+              <option value="sm">Samoan</option>
+              <option value="gd">Scots Gaelic</option>
+              <option value="sr">Serbian</option>
+              <option value="st">Sesotho</option>
+              <option value="sn">Shona</option>
+              <option value="sd">Sindhi</option>
+              <option value="si">Sinhala (Sinhalese)</option>
+              <option value="sk">Slovak</option>
+              <option value="sl">Slovenian</option>
+              <option value="so">Somali</option>
+              <option value="es">Spanish</option>
+              <option value="su">Sundanese</option>
+              <option value="sw">Swahili</option>
+              <option value="sv">Swedish</option>
+              <option value="tl">Tagalog (Filipino)</option>
+              <option value="tg">Tajik</option>
+              <option value="ta">Tamil</option>
+              <option value="tt">Tatar</option>
+              <option value="te">Telugu</option>
+              <option value="th">Thai</option>
+              <option value="tr">Turkish</option>
+              <option value="tk">Turkmen</option>
+              <option value="uk">Ukrainian</option>
+              <option value="ur">Urdu</option>
+              <option value="ug">Uyghur</option>
+              <option value="uz">Uzbek</option>
+              <option value="vi">Vietnamese</option>
+              <option value="cy">Welsh</option>
+              <option value="xh">Xhosa</option>
+              <option value="yi">Yiddish</option>
+              <option value="yo">Yoruba</option>
+              <option value="zu">Zulu</option>
+            </select>
+          </div>
           <div className="bg-black/60 backdrop-blur-xl border border-white/10 p-4 rounded-2xl text-center shadow-2xl">
             <p className="text-lg font-medium text-white/90 leading-relaxed italic">
               {captions || "Listening..."}
