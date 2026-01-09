@@ -6,7 +6,7 @@ import { VideoPlayer } from "@/components/VideoPlayer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Copy, Check, Users, Signal, Loader2, UserCircle } from "lucide-react";
+import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Copy, Check, Users, Signal, Loader2, UserCircle, MonitorUp, MonitorOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -16,17 +16,28 @@ export default function Room() {
   const roomId = params?.id || "";
   
   const { data: room, isLoading } = useRoom(roomId);
-  const { localStream, remoteStream, connectionStatus, toggleAudio, toggleVideo, updateNickname } = useWebRTC(roomId);
+  const { localStream, remoteStream, screenStream, connectionStatus, toggleAudio, toggleVideo, startScreenShare, stopScreenShare, updateNickname, isBoss } = useWebRTC(roomId);
   
   const [password, setPassword] = useState("");
   const [isVerified, setIsVerified] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [nickname, setNickname] = useState("");
   const [joined, setJoined] = useState(false);
   const [participants, setParticipants] = useState<any[]>([]);
+
+  const handleToggleScreenShare = async () => {
+    if (isScreenSharing) {
+      stopScreenShare();
+      setIsScreenSharing(false);
+    } else {
+      const stream = await startScreenShare();
+      if (stream) setIsScreenSharing(true);
+    }
+  };
 
   useEffect(() => {
     const handleParticipantsUpdate = (e: any) => {
@@ -355,6 +366,40 @@ export default function Room() {
 
           <div className="w-px h-8 bg-white/10 mx-2" />
 
+          {isBoss && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="lg"
+                  variant={isScreenSharing ? "destructive" : "ghost"}
+                  className={cn("rounded-xl h-12 w-12 p-0", !isScreenSharing && "bg-white/5 hover:bg-white/10")}
+                  onClick={handleToggleScreenShare}
+                >
+                  {isScreenSharing ? <MonitorOff className="w-5 h-5" /> : <MonitorUp className="w-5 h-5" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                {isScreenSharing ? "Stop Sharing" : "Share Screen"}
+              </TooltipContent>
+            </Tooltip>
+          )}
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="lg"
+                variant={showCC ? "outline" : "ghost"}
+                className={cn("rounded-xl h-12 w-12 p-0", !showCC && "bg-white/5 hover:bg-white/10")}
+                onClick={() => setShowCC(!showCC)}
+              >
+                <Signal className={cn("w-5 h-5", showCC && "text-primary")} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              {showCC ? "Hide Captions" : "Show Captions"}
+            </TooltipContent>
+          </Tooltip>
+
           <Button
             size="lg"
             variant="destructive"
@@ -366,6 +411,16 @@ export default function Room() {
           </Button>
         </div>
       </footer>
+
+      {showCC && (
+        <div className="fixed bottom-32 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-50">
+          <div className="bg-black/60 backdrop-blur-xl border border-white/10 p-4 rounded-2xl text-center shadow-2xl">
+            <p className="text-lg font-medium text-white/90 leading-relaxed italic">
+              {captions || "Listening..."}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
