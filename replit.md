@@ -1,10 +1,8 @@
-# StreamSync - Real-time Video Communication Platform
+# StreamSync - Video Conferencing Application
 
 ## Overview
 
-StreamSync is a real-time video calling application that enables users to create and join video rooms for peer-to-peer communication. The platform supports room creation with optional password protection, WebRTC-based video/audio streaming, and real-time signaling through WebSockets.
-
-The application follows a monorepo structure with a React frontend, Express backend, and PostgreSQL database. It uses modern web technologies including WebRTC for media streaming and WebSockets for real-time signaling between peers.
+StreamSync is a real-time video conferencing application that enables users to create and join video meeting rooms. The application supports WebRTC-based peer-to-peer video calls with features like screen sharing, audio/video toggling, password-protected rooms, and real-time caption translation. Built as a full-stack TypeScript application with a React frontend and Express backend.
 
 ## User Preferences
 
@@ -13,65 +11,57 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### Frontend Architecture
-- **Framework**: React 18 with TypeScript
-- **Routing**: Wouter (lightweight React router)
-- **State Management**: TanStack React Query for server state, React hooks for local state
-- **Styling**: Tailwind CSS with shadcn/ui component library
-- **Build Tool**: Vite with custom plugins for Replit integration
-- **Animations**: Framer Motion for page transitions and micro-interactions
+- **Framework**: React 18 with TypeScript, using Vite as the build tool
+- **Routing**: Wouter for lightweight client-side routing
+- **State Management**: TanStack React Query for server state and data fetching
+- **Styling**: Tailwind CSS with shadcn/ui component library (new-york style)
 - **Theming**: next-themes for dark/light mode support
+- **Animations**: Framer Motion for page transitions and micro-interactions
+- **Path Aliases**: `@/` maps to `client/src/`, `@shared/` maps to `shared/`
 
 ### Backend Architecture
-- **Runtime**: Node.js with Express
-- **Language**: TypeScript with tsx for development
-- **API Design**: RESTful endpoints defined in shared routes with Zod validation
-- **Real-time**: WebSocket server (ws) for signaling
-- **Build**: esbuild for production bundling with selective dependency bundling
+- **Runtime**: Node.js with Express.js
+- **API Style**: REST API with typed route definitions in `shared/routes.ts`
+- **Real-time Communication**: WebSocket server (ws library) for signaling
+- **Build**: esbuild for server bundling, Vite for client bundling
+- **Development**: tsx for TypeScript execution without compilation
 
-### Database Layer
-- **Database**: PostgreSQL
-- **ORM**: Drizzle ORM with drizzle-zod for schema validation
-- **Schema Location**: `shared/schema.ts` contains all table definitions
-- **Migrations**: Drizzle Kit with `db:push` command
+### WebRTC Implementation
+- **STUN Servers**: Google's public STUN servers for NAT traversal
+- **Signaling**: WebSocket-based signaling through the Express server
+- **Features**: Video/audio streaming, screen sharing, connection status tracking
+- **Media Constraints**: HD video (up to 4K), echo cancellation, noise suppression
 
-### Real-time Communication
-- **WebRTC**: Peer-to-peer video/audio with STUN servers (Google's public STUN)
-- **Signaling**: WebSocket connection at `/ws` relative path for offer/answer/ICE candidate exchange
-- **Media Constraints**: 720p video at 30fps with echo cancellation and noise suppression
+### Data Storage
+- **Database**: PostgreSQL via Drizzle ORM
+- **Schema Location**: `shared/schema.ts` defines database tables
+- **Migrations**: Drizzle Kit manages schema migrations in `./migrations`
+- **Session Storage**: connect-pg-simple for PostgreSQL session storage
 
 ### Shared Code Pattern
-- **Location**: `shared/` directory contains code used by both client and server
-- **Routes**: Type-safe API route definitions with Zod schemas in `shared/routes.ts`
-- **Schema**: Database schema and insert types in `shared/schema.ts`
-- **Path Aliases**: `@shared/*` maps to shared directory
+The `shared/` directory contains code used by both frontend and backend:
+- `schema.ts`: Drizzle database schema and Zod validation schemas
+- `routes.ts`: Typed API route definitions with input/output schemas
 
-### Key Design Decisions
-1. **Monorepo Structure**: Client, server, and shared code in single repository for type safety across boundaries
-2. **Schema-First Validation**: Zod schemas define API contracts, used for both client and server validation
-3. **Component Library**: shadcn/ui provides accessible, customizable UI primitives
-4. **WebRTC Direct**: No media server - pure P2P connections for simplicity and lower latency
+This pattern ensures type safety across the full stack and reduces duplication.
 
 ## External Dependencies
 
 ### Database
-- **PostgreSQL**: Primary data store, connected via `DATABASE_URL` environment variable
-- **connect-pg-simple**: Session storage in PostgreSQL (available but sessions not currently implemented)
+- **PostgreSQL**: Primary database, connection via `DATABASE_URL` environment variable
+- **Drizzle ORM**: Type-safe database queries and schema management
 
-### WebRTC Infrastructure
-- **STUN Servers**: 
-  - `stun:stun.l.google.com:19302`
-  - `stun:stun1.l.google.com:19302`
-- No TURN server configured - may cause issues behind strict NATs/firewalls
+### Real-time Communication
+- **WebSocket (ws)**: Server-side WebSocket implementation for WebRTC signaling
+- **Google STUN Servers**: `stun:stun.l.google.com:19302` and related servers for peer discovery
 
-### Frontend Libraries
-- **@tanstack/react-query**: Server state management and caching
-- **@radix-ui/***: Headless UI primitives (used by shadcn/ui)
-- **framer-motion**: Animation library
-- **wouter**: Lightweight routing
-- **next-themes**: Theme management
+### External APIs
+- **Google Translate API**: Used for real-time caption translation (unofficial endpoint)
 
-### Build & Development
-- **Vite**: Frontend build tool with HMR
-- **esbuild**: Server bundling for production
-- **drizzle-kit**: Database migrations and schema management
-- **tsx**: TypeScript execution for development
+### UI Component Libraries
+- **Radix UI**: Headless UI primitives for accessible components
+- **shadcn/ui**: Pre-built component collection using Radix + Tailwind
+- **Lucide React**: Icon library
+
+### Chrome Extension
+A companion Chrome extension exists in `chrome-extension/` for enhanced functionality on StreamSync pages. It requires the `activeTab` and `storage` permissions.
